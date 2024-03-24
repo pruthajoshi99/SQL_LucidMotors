@@ -1,0 +1,315 @@
+--------Encryption Steps:------------
+
+----Creating password
+CREATE MASTER KEY ENCRYPTION BY PASSWORD = 'Damg@2023!04#';
+
+----CREATE CERTIFICATE TO PROTECT SYMMETRIC KEY
+CREATE CERTIFICATE LucidMotorsCertificate
+WITH SUBJECT = 'LucidMotors Test Certificate',
+EXPIRY_DATE = '2026-10-31'
+
+---CREATE SYMMETRIC KEY TO ENCRYPT DATA
+CREATE SYMMETRIC KEY LucidLicenseKey
+WITH ALGORITHM = AES_256
+ENCRYPTION BY CERTIFICATE LucidMotorsCertificate;
+
+----OPEN SYMMETRIC KEY
+OPEN SYMMETRIC KEY LucidLicenseKey
+DECRYPTION BY CERTIFICATE LucidMotorsCertificate;
+
+--CLOSE SYMMETRIC KEY LucidLicenseKey;
+--DROP SYMMETRIC KEY LucidLicenseKey;
+--Drop MASTER Key;
+--DROP CERTIFICATE LucidMotorsCertificate;
+
+
+----ENCRYPTION CUSTOMER DETAILS (VIN)
+ALTER TABLE CustomerDetails DROP COLUMN EncryptedVIN;
+ALTER TABLE dbo.CustomerDetails ADD EncryptedVIN varbinary(256);
+UPDATE CustomerDetails SET EncryptedVIN = EncryptByKey(Key_GUID('LucidLicenseKey'), CONVERT(VARBINARY(256), VIN));
+OPEN SYMMETRIC KEY LucidLicenseKey
+DECRYPTION BY CERTIFICATE LucidMotorsCertificate;
+UPDATE dbo.CustomerDetails
+SET EncryptedVIN = ENCRYPTBYKEY(KEY_GUID('LucidLicenseKey'), CONVERT(varbinary(256), VIN))
+CLOSE SYMMETRIC KEY LucidLicenseKey;
+Alter Table CustomerDetails Drop Column VIN;
+
+
+OPEN SYMMETRIC KEY LucidLicenseKey
+DECRYPTION BY CERTIFICATE LucidMotorsCertificate;
+SELECT CONVERT(varchar(30), DECRYPTBYKEY(EncryptedVIN)) AS DecryptedLicense
+FROM dbo.CustomerDetails;
+CLOSE SYMMETRIC KEY LucidLicenseKey;
+Select * From CustomerDetails cd ;
+
+
+-----ENCRYPTION ON TEST DRIVER DETAILS (License Number)
+ALTER TABLE dbo.TestDriveDetails ADD EncryptedLicense varbinary(256);
+UPDATE dbo.TestDriveDetails SET EncryptedLicense = EncryptByKey(Key_GUID('LucidLicenseKey'), CONVERT(VARBINARY(256), CustLicenseNum));
+Alter Table TestDriveDetails Drop Column CustLicenseNum;
+OPEN SYMMETRIC KEY LucidLicenseKey
+DECRYPTION BY CERTIFICATE LucidMotorsCertificate;
+UPDATE dbo.TestDriveDetails
+SET EncryptedLicense = ENCRYPTBYKEY(KEY_GUID('LucidLicenseKey'), CONVERT(varbinary(256), CustLicenseNum))
+CLOSE SYMMETRIC KEY LucidLicenseKey;
+
+
+OPEN SYMMETRIC KEY LucidLicenseKey
+DECRYPTION BY CERTIFICATE LucidMotorsCertificate;
+SELECT CONVERT(varchar(30), DECRYPTBYKEY(EncryptedLicense)) AS DecryptedLicense
+FROM dbo.TestDriveDetails;
+CLOSE SYMMETRIC KEY LucidLicenseKey;
+Select * From TestDriveDetails tdd ;
+
+
+
+--------VIEWS:-----------
+/*1. Model Wise Quarterly Showroom Sales : 
+     This view can be used to analyze and compare sales of different vehicle models across different quarters and showrooms.*/
+
+CREATE VIEW Quarterly_Showroom_Sales_Modelwise AS
+SELECT
+CAST(sp.ShowroomID AS varchar(10)) AS ShowroomID,
+CONCAT(YEAR(sp.OrderDate), ' ', DATEPART(QUARTER, sp.OrderDate)) AS YearQuarter, CAST(vm.ModelID AS varchar(10)) AS ModelID , vm.ModelName, SUM(TotalAmount) AS TotalSales
+FROM
+SalesPurchaseDetails sp
+JOIN VehicleModel vm 
+ON sp.ModelID = vm.ModelID
+GROUP BY
+sp.ShowroomID,vm.ModelID,vm.ModelName,YEAR(sp.OrderDate),
+DATEPART(QUARTER, sp.OrderDate);
+
+
+SELECT * FROM Quarterly_Showroom_Sales_Modelwise;
+
+
+/*2. Showroom Monthly Sales Count Model wise:
+     This view can be used to analyze and compare the monthly count of sales of different vehicle models across different showrooms.*/
+
+CREATE VIEW Showroom_Monthly_SalesCount_perModel AS
+SELECT 
+CAST(sp.ShowroomID AS varchar(10)) AS ShowroomID, 
+CAST(vm.ModelID AS varchar(10)) AS ModelID,
+vm.ModelName,
+CAST(YEAR(OrderDate) AS varchar(10)) AS SalesYear, 
+MONTH(OrderDate) AS SalesMonth, 
+COUNT(vm.ModelID) AS SalesCount
+FROM SalesPurchaseDetails sp
+JOIN VehicleModel vm 
+ON sp.ModelID = vm.ModelID
+GROUP BY ShowroomID, vm.ModelID, vm.ModelName, YEAR(OrderDate), MONTH(OrderDate);
+
+SELECT * FROM Showroom_Monthly_SalesCount_perModel
+
+
+/*3. Track of Showroom Inventory Details: 
+     This view can be created to show the inventory details of each showroom, based on the data in the InventoryDetails and ShowroomInventoryMap tables.*/
+
+CREATE VIEW ShowroomInventoryDetails AS
+SELECT 
+CAST(i.ShowroomID AS varchar(10)) AS ShowroomID,
+s.StreetAddress, s.City, s.Zipcode, 
+CAST(i.ModelID AS varchar(10)) AS ModelID,m.ModelName, i.AvailabilityCount [AvailabilityCount]
+FROM InventoryDetails i
+JOIN  ShowroomDetails s
+ON i.ShowroomID = s.ShowroomID
+JOIN VehicleModel m 
+ON i.ModelID = m.ModelID;
+
+SELECT * FROM ShowroomInventoryDetails;
+
+
+
+/*4. Test Drive Schedule Details: 
+     This view can be created to show the details of scheduled test drives, based on the    data in the TestDriveDetails table.*/
+
+CREATE VIEW TestDriveScheduleDetails AS
+SELECT CAST(td.TestDriveID AS varchar(10)) AS TestDriveDetails , 
+td.ScheduleDate, 
+CAST(vm.ModelID AS varchar(10)) AS ModelID , vm.ModelName, vm.BasePrice, vm.ReleaseYear, 
+CAST(td.ShowroomID AS varchar(10)) AS ShowroomID, sd.StreetAddress, sd.City, sd.Zipcode, 
+ed.EmployeeID, (ed.EmployeeFName + ' ' + ed.EmployeeLName) as EmployeeName
+FROM TestDriveDetails td
+JOIN VehicleTestMapping vt 
+ON vt.TestDriveID = td.TestDriveID
+JOIN VehicleModel vm
+ON vm.ModelID = vt.ModelID
+JOIN EmployeeDetails ed 
+ON ed.EmployeeID = td.EmployeeID
+JOIN ShowroomDetails sd 
+ON sd.ShowroomID = td.ShowroomID;
+
+SELECT * FROM TestDriveScheduleDetails;
+
+
+
+
+
+-----Computed Column based on a function:------
+
+
+/*This function would calculate Total Sales amount which is sum of base price of Model, addition of all accessories included and then subtracting the discount based on offer.*/
+
+
+CREATE FUNCTION dbo.ComputedTotalAmount(@OrderID INT, @OfferID INT)
+RETURNS MONEY
+AS
+BEGIN
+    DECLARE @BasePrice MONEY, @Discount FLOAT, @AccessoryAmount MONEY, @TotalAmount MONEY;
+    SELECT @BasePrice = BasePrice FROM VehicleModel
+    WHERE ModelID = (SELECT ModelID FROM SalesPurchaseDetails WHERE OrderID = @OrderID);
+    
+    SELECT @Discount = Discount FROM Promotions WHERE OfferID = @OfferID;
+
+
+    SELECT @AccessoryAmount = SUM(COST) FROM OrderAccMap om
+    JOIN AccessoryDetails ad
+    ON om.AccessoryID = ad.AccessoryID WHERE OrderID = @OrderID;
+
+
+    IF(@Discount IS NULL or @AccessoryAmount IS NULL)
+    SET @TotalAmount = @BasePrice;
+    ELSE 
+
+
+    SET @TotalAmount = (@BasePrice + @AccessoryAmount) - ((@BasePrice + @AccessoryAmount) * @Discount/100);
+
+
+    RETURN @TotalAmount;
+END;
+
+
+
+------------Table-level CHECK Constraints based on a function--------------
+
+
+/*1.  Check TestDrive Limit PerDay: 
+      This constraint would make sure that no Showroom would have more than 10 test drives appointments per day.*/
+
+CREATE FUNCTION CheckTestDriveLimitPerDay (@showroomID INT, @scheduleDate DATETIME)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @count INT;
+    SET @count = (SELECT COUNT(*) FROM TestDriveDetails 
+                  WHERE ShowroomID = @showroomID AND CAST(ScheduleDate AS DATE) = CAST(@scheduleDate AS DATE));
+    RETURN CASE WHEN @count >= 10 THEN 0 ELSE 1 END;
+END;
+
+
+ALTER TABLE TestDriveDetails ADD CONSTRAINT ShowroomTestDriveLimit CHECK (dbo.CheckTestDriveLimitPerDay(ShowroomID, ScheduleDate) = 1);
+
+
+
+
+/*2. Check Offer Expiry:
+     This constraint would make sure that the customer won't be able to use the offers which are expired.*/
+
+
+CREATE FUNCTION CheckOfferValidity (@OfferID INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @IsValid INT = 0;
+    DECLARE @OfferEndDate DATE;
+
+
+    IF @OfferID IS NOT NULL
+    BEGIN
+        SELECT @OfferEndDate = OfferEndDate
+        FROM Promotions
+        WHERE OfferID = @OfferID;
+
+
+        IF @OfferEndDate > GETDATE()
+            SET @IsValid = 1;
+    END
+    ELSE
+    BEGIN
+        SET @IsValid = 1;
+    END
+
+
+    RETURN @IsValid;
+END;
+
+ALTER TABLE SalesPurchaseDetails ADD CONSTRAINT CHK_SalesPurchaseDetails_OfferValidity CHECK (dbo.CheckOfferValidity(OfferID) = 1);
+
+INSERT INTO SalesPurchaseDetails (OrderID, ModelID, CustomerID, ShowroomID, OfferID, OrderDate, DeliveryDate)
+VALUES(756, 1001, 10030, 3004, 9, '2023-05-28', '2023-06-10');
+
+
+---------Trigger------------
+/*1. Inventory Update:
+     This trigger is to update the availability count in the inventory details table for each Model for each Showroom after sales.*/
+
+CREATE TRIGGER tr_update_inventory_details
+ON SalesPurchaseDetails
+AFTER INSERT
+AS
+BEGIN
+    Declare @modelid int, @showroomid int;
+    SELECT  @modelid = ModelID, @showroomid = ShowroomId from inserted;
+    
+    UPDATE InventoryDetails
+    SET AvailabilityCount = AvailabilityCount - 1 
+    WHERE ModelID = @ModelID and ShowroomID = @ShowroomID
+
+
+END;
+
+
+/*2.Model wise Offer Validation
+    The trigger will be triggered when a wrong offer is added for a specific model.*/
+
+
+CREATE TRIGGER ValidOfferForModel
+ON SalesPurchaseDetails
+FOR INSERT, UPDATE
+AS
+BEGIN
+  SET NOCOUNT ON;
+  IF EXISTS (SELECT 1 FROM inserted WHERE OfferID IS NOT NULL)
+  BEGIN
+    IF NOT EXISTS (
+      SELECT 1 FROM inserted i
+      JOIN VehiclePromotionMap vpm 
+      ON i.ModelID = vpm.ModelID AND i.OfferID = vpm.OfferID
+    )
+    BEGIN
+      RAISERROR('The offer is not valid for the selected model', 16, 1)
+      ROLLBACK TRANSACTION
+    END
+  END
+END;
+
+
+INSERT INTO SalesPurchaseDetails (OrderID, ModelID, CustomerID, ShowroomID, OfferID, OrderDate, DeliveryDate)
+VALUES(777, 1001, 10028, 3001, 2, '2023-08-28', '2023-08-31');
+
+
+
+
+------------ Function ---------
+
+
+/*1. User Ratings:
+The function will give insights regarding Customer feedback about a certain model.*/
+
+
+CREATE FUNCTION dbo.GetRatingStats()
+ RETURNS TABLE 
+ AS
+RETURN ( 
+SELECT vm.ModelName, AVG(cf.Rating) AS AvgRating,
+MAX(cf.Rating) AS MaxRating, 
+COUNT(DISTINCT CASE WHEN cf.Rating > 6 THEN cf.CustomerID END) AS CustomerCountHavingMaxRating 
+FROM CustomerFeedback cf 
+INNER JOIN 
+VehicleModel vm 
+ON cf.ModelID = vm.ModelID 
+GROUP BY vm.ModelName 
+);
+
+
+SELECT * FROM dbo.GetRatingStats()

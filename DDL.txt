@@ -1,0 +1,568 @@
+------ DDL Create Table Queries: -------------
+
+CREATE DATABASE LucidMotors;
+
+USE LucidMotors;
+
+CREATE TABLE LucidMotors.dbo.VehicleModel ( 
+ModelID int NOT NULL,
+	ModelName varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	BasePrice int NULL,
+	ReleaseYear date NULL,
+	CarBody varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	SeatCount int NULL,
+	ChargingType varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	DrivingMode varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CONSTRAINT PK__VehicleM__E8D7A1CCA615098E PRIMARY KEY (ModelID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.ModelPerformance (
+	PerformanceID int IDENTITY(1,1) NOT NULL,
+	ModelID int NOT NULL,
+	ModelAccelaration varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	TopSpeed varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	DriveType varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	VehicleRange varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	HorsePower varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CONSTRAINT PK__ModelPer__F9606DE1C93F53CB PRIMARY KEY (PerformanceID), CONSTRAINT FK__ModelPerf__Model__267ABA7A FOREIGN KEY (ModelID) REFERENCES LucidMotors.dbo.VehicleModel(ModelID)
+);
+
+
+
+CREATE TABLE LucidMotors.dbo.InventoryDetails (
+	ModelID int NOT NULL,
+	ShowroomID int NOT NULL,
+	AvailabilityCount int NULL,
+	CONSTRAINT PK__Inventor__42A08705331430CD PRIMARY KEY (ModelID,ShowroomID),
+	CONSTRAINT FK__Inventory__Model__7F2BE32F FOREIGN KEY (ModelID) REFERENCES LucidMotors.dbo.VehicleModel(ModelID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.AccessoryDetails (
+	AccessoryID int NOT NULL,
+	AccessoryName varchar(150) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	Cost int NULL,
+	Availability varchar(10) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CONSTRAINT PK__Accessor__09C3F0FB1031C9E9 PRIMARY KEY (AccessoryID)
+);
+
+CREATE TABLE LucidMotors.dbo.DealerDetails (
+	DealerID int NOT NULL,
+	ShowroomID int NULL,
+	DealerName varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	Contact varchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CONSTRAINT PK__DealerDe__CA2F8E9237922962 PRIMARY KEY (DealerID),
+	CONSTRAINT FK__DealerDet__Showr__3B75D760 FOREIGN KEY (ShowroomID) REFERENCES LucidMotors.dbo.ShowroomDetails(ShowroomID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.EmployeeDetails (
+	EmployeeID int NOT NULL,
+	ShowroomID int NULL,
+	EmployeeLName varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	EmployeeFName varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	JobTitle varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	Email varchar(60) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	Contact varchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CONSTRAINT PK__Employee__7AD04FF144717012 PRIMARY KEY (EmployeeID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.CustomerDetails (
+	CustomerID int NOT NULL,
+	CustomerFName varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CustomerLName varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	StreetAddress varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	City varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	State varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	ZipCode varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CustomerContact varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	Occupation varchar(30) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	EncryptedVIN varbinary(256) NULL,
+	CONSTRAINT PK__Customer__A4AE64B86C6DDD0B PRIMARY KEY (CustomerID)
+);
+
+CREATE TABLE LucidMotors.dbo.CustomerFeedback (
+	FeedbackID bigint NOT NULL,
+	CustomerID int NOT NULL,
+	ModelID int NOT NULL,
+	Rating int NULL,
+	Feedback varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	CONSTRAINT PKFeed PRIMARY KEY (FeedbackID,CustomerID),
+	CONSTRAINT FK__CustomerF__Custo__2F10007B FOREIGN KEY (CustomerID) REFERENCES LucidMotors.dbo.CustomerDetails(CustomerID),
+	CONSTRAINT FK__CustomerF__Model__300424B4 FOREIGN KEY (ModelID) REFERENCES LucidMotors.dbo.VehicleModel(ModelID)
+);
+ALTER TABLE LucidMotors.dbo.CustomerFeedback WITH NOCHECK ADD CONSTRAINT CK__CustomerF__Ratin__30F848ED CHECK ([Rating]<(11));
+
+
+
+
+CREATE TABLE LucidMotors.dbo.CustomerVehicleMapping (
+	ModelID int NOT NULL,
+	CustomerID int NOT NULL,
+	CONSTRAINT PKResult PRIMARY KEY (ModelID,CustomerID),
+	CONSTRAINT FK__CustomerV__Custo__2C3393D0 FOREIGN KEY (CustomerID) REFERENCES LucidMotors.dbo.CustomerDetails(CustomerID),
+	CONSTRAINT FK__CustomerV__Model__2B3F6F97 FOREIGN KEY (ModelID) REFERENCES LucidMotors.dbo.VehicleModel(ModelID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.LoanProviderDetails (
+	LoanProviderID int NOT NULL,
+	CustomerID int NOT NULL,
+	LoanProviderName varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	InterestRate decimal(10,2) NOT NULL,
+	LoanDuration int NOT NULL,
+	AmountRequested bigint NOT NULL,
+	LoanEligibility bigint NOT NULL,
+	LoanApprovalDate date NULL,
+	CONSTRAINT PK__LoanProv__6F58E0D53639E152 PRIMARY KEY (LoanProviderID),
+	CONSTRAINT FK__LoanProvi__Custo__33D4B598 FOREIGN KEY (CustomerID) REFERENCES LucidMotors.dbo.CustomerDetails(CustomerID)
+);
+
+CREATE TABLE LucidMotors.dbo.Promotions (
+	OfferID int NOT NULL,
+	OfferType varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	Discount float NULL,
+	OfferStartDate date NULL,
+	OfferEndDate date NULL,
+	CONSTRAINT PK__Promotio__8EBCF0B1D1CDC949 PRIMARY KEY (OfferID)
+);
+
+CREATE TABLE LucidMotors.dbo.VehiclePromotionMap (
+	ModelID int NOT NULL,
+	OfferID int NOT NULL,
+	CONSTRAINT PKResult_Promotions PRIMARY KEY (ModelID,OfferID),
+	CONSTRAINT FK__VehiclePr__Model__5AEE82B9 FOREIGN KEY (ModelID) REFERENCES LucidMotors.dbo.VehicleModel(ModelID),
+	CONSTRAINT FK__VehiclePr__Offer__5BE2A6F2 FOREIGN KEY (OfferID) REFERENCES LucidMotors.dbo.Promotions(OfferID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.VehicleTestMapping (
+	ModelID int NOT NULL,
+	TestDriveID int NOT NULL,
+	CONSTRAINT PK__VehicleT__D32E2F3B669F7A63 PRIMARY KEY (ModelID,TestDriveID),
+	CONSTRAINT FK__VehicleTe__Model__02FC7413 FOREIGN KEY (ModelID) REFERENCES LucidMotors.dbo.VehicleModel(ModelID),
+	CONSTRAINT FK__VehicleTe__TestD__03F0984C FOREIGN KEY (TestDriveID) REFERENCES LucidMotors.dbo.TestDriveDetails(TestDriveID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.OrderAccMap (
+	OrderID int NOT NULL,
+	AccessoryID int NOT NULL,
+	CONSTRAINT PK_OrderAccMap PRIMARY KEY (OrderID,AccessoryID),
+	CONSTRAINT FK__OrderAccM__Acces__619B8048 FOREIGN KEY (AccessoryID) REFERENCES LucidMotors.dbo.AccessoryDetails(AccessoryID),
+	CONSTRAINT FK__OrderAccM__Order__60A75C0F FOREIGN KEY (OrderID) REFERENCES LucidMotors.dbo.SalesPurchaseDetails(OrderID)
+);
+
+
+
+CREATE TABLE LucidMotors.dbo.SalesPurchaseDetails (
+	OrderID int NOT NULL,
+	ModelID int NULL,
+	CustomerID int NULL,
+	ShowroomID int NULL,
+	OfferID int NULL,
+	OrderDate date NULL,
+	DeliveryDate date NULL,
+	TotalAmount AS ([dbo].[ComputedTotalAmount]([OrderID],[OfferID])),
+	CONSTRAINT PK__SalesPur__C3905BAF9A86B505 PRIMARY KEY (OrderID),
+	CONSTRAINT FK__SalesPurc__Custo__5629CD9C FOREIGN KEY (CustomerID) REFERENCES LucidMotors.dbo.CustomerDetails(CustomerID),
+	CONSTRAINT FK__SalesPurc__Model__5535A963 FOREIGN KEY (ModelID) REFERENCES LucidMotors.dbo.VehicleModel(ModelID),
+	CONSTRAINT FK__SalesPurc__Offer__5812160E FOREIGN KEY (OfferID) REFERENCES LucidMotors.dbo.Promotions(OfferID),
+	CONSTRAINT FK__SalesPurc__Showr__571DF1D5 FOREIGN KEY (ShowroomID) REFERENCES LucidMotors.dbo.ShowroomDetails(ShowroomID)
+);
+
+
+CREATE TABLE LucidMotors.dbo.ShowroomDetails (
+	ShowroomID int NOT NULL,
+	ManagerID int NULL,
+	StreetAddress varchar(250) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	City varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	Zipcode char(5) COLLATE SQL_Latin1_General_CP1_CI_AS NULL,
+	ShowroomRating int NULL,
+	CONSTRAINT PK__Showroom__A7726C9B3114EEF0 PRIMARY KEY (ShowroomID),
+	CONSTRAINT FK__ShowroomD__Showr__38996AB5 FOREIGN KEY (ManagerID) REFERENCES LucidMotors.dbo.EmployeeDetails(EmployeeID)
+);
+
+ALTER TABLE LucidMotors.dbo.TestDriveDetails WITH NOCHECK ADD CONSTRAINT ShowroomTestDriveLimit CHECK ([dbo].[CheckTestDriveLimitPerDay]([ShowroomID],[ScheduleDate])=(1));
+
+
+CREATE TABLE LucidMotors.dbo.TestDriveDetails (
+	ScheduleDate datetime NOT NULL,
+	ShowroomID int NOT NULL,
+	EmployeeID int NOT NULL,
+	TestDriveOutcome varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	Feedback varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+	TestDriveID int IDENTITY(5001,1) NOT NULL,
+	EncryptedLicense varbinary(256) NULL,
+	CONSTRAINT UQ__TestDriv__9F91183F3E27F271 UNIQUE (ScheduleDate),
+	CONSTRAINT pk_TestDriveID PRIMARY KEY (TestDriveID),
+	CONSTRAINT FK__TestDrive__Emplo__46E78A0C FOREIGN KEY (EmployeeID) REFERENCES LucidMotors.dbo.EmployeeDetails(EmployeeID),
+	CONSTRAINT FK__TestDrive__Showr__45F365D3 FOREIGN KEY (ShowroomID) REFERENCES LucidMotors.dbo.ShowroomDetails(ShowroomID)
+);
+
+ALTER TABLE LucidMotors.dbo.TestDriveDetails WITH NOCHECK ADD CONSTRAINT ShowroomTestDriveLimit CHECK ([dbo].[CheckTestDriveLimitPerDay]([ShowroomID],[ScheduleDate])=(1));
+
+
+------Insert Queries:-----
+
+--1. VEHICLE  MODEL
+INSERT INTO LucidMotors.dbo.VehicleModel (ModelID, ModelName, BasePrice, ReleaseYear, CarBody, SeatCount, ChargingType, DrivingMode)
+VALUES
+(1001, 'Lucid Pure', 87400, '2021-09-28', 'Sedan', 5, 'DC Fast Charging', 'RWD'),
+(1002, 'Touring', 107400, '2021-01-01', 'Sedan', 5, 'Supercharger', 'AWD'),
+(1003, 'Grand Touring', 138000, '2020-01-01', 'Sedan', 4, 'DC Fast Charging', 'AWD'),
+(1004, 'Sapphire', 249000, '2022-01-01', 'Sedan', 5, 'DC Fast Charging', 'AWD'),
+(1005, 'Lucid Air', 89050, '2023-01-01', 'Sedan', 5, 'DC Fast Charging', 'AWD'),
+(1006, 'Lucid Gravity', 90000, '2023-03-01', 'SUV', 7, 'DC Fast Charging', 'AWD'),
+(1007, 'Lucid Space', 110000, '2023-03-01', 'Minivan', 8, 'DC Fast Charging', 'AWD'),
+(1008, 'Sportz', 93000, '2023-03-01', 'SUV', 7, 'DC Fast Charging', 'AWD'),
+(1009, 'Lucid Boom', 40000, '2023-03-01', 'Coupe', 2, 'DC Fast Charging', 'AWD'),
+(1010, 'Lucid Accord', 79000, '2023-03-01', 'Convertible', 4, 'DC Fast Charging', 'AWD');
+
+
+--2.MODEL PERFORMANCE
+INSERT INTO LucidMotors.dbo.ModelPerformance (ModelID, ModelAccelaration, TopSpeed, DriveType, VehicleRange, HorsePower)
+VALUES 
+(1001, '2.5 seconds', '168 mph', 'Rear-Wheel Drive', '406 miles', '480 hp'),
+(1002, '2.7 seconds', '168 mph', 'All-Wheel Drive', '517 miles', '1080 hp'),
+(1003, '2.3 seconds', '168 mph', 'All-Wheel Drive', '517 miles', '1080 hp'),
+(1004, '1.98 seconds', '217 mph', 'All-Wheel Drive', '517 miles', '1080 hp'),
+(1005, '2.5 seconds', '168 mph', 'All-Wheel Drive', '406 miles', '480 hp'),
+(1006, '2.9 seconds', '155 mph', 'All-Wheel Drive', '500 miles', '1000 hp'),
+(1007, '3.5 seconds', '170 mph', 'All-Wheel Drive', '520 miles', '1080 hp'),
+(1008, '3.0 seconds', '155 mph', 'All-Wheel Drive', '405 miles', '900 hp'),
+(1009, '2.1 seconds', '155 mph', 'All-Wheel Drive', '405 miles', '800 hp'),
+(1010, '2.4 seconds', '200 mph', 'All-Wheel Drive', '517 miles', '1080 hp');
+
+
+--3. INVENTORY DETAILS
+INSERT INTO LucidMotors.dbo.InventoryDetails (ModelID, ShowroomID, AvailabilityCount)
+VALUES (1001,3001,5),(1001,3002,10),(1001,3003,2),(1001,3004,7),(1001,3005,3),
+(1001,3006,6),(1001,3007,8),(1001,3009,12),
+(1002, 3001, 12),(1002,3003, 4),(1002,3004, 9),(1002,3007, 2),(1002,3008, 3),(1002,3010,5),
+(1003, 3001, 3),(1003,3002, 6),(1003,3005,12),(1003,3006, 2),(1003,3009,7),(1003,3010,10),
+(1004, 3002, 10),(1004, 3003, 5),(1004, 3005, 20),(1004, 3006, 15),(1004, 3008, 8),(1004, 3009, 12),
+(1005, 3001, 6),(1005, 3002, 18),(1005, 3004, 22),(1005, 3005, 9),(1005, 3006, 15),(1005, 3008,6),(1005, 3010,1),
+(1006, 3002,6), (1006, 3003,5), (1006, 3004,8), (1006, 3007,13),(1006, 3008,2),(1006, 3009,4),(1006, 3010,5),
+(1007, 3002,3), (1007, 3003,9), (1007, 3005,10), (1007, 3009,5),
+(1008, 3005,1), (1008, 3010,7), (1008, 3003,5), (1008, 3006,4),
+(1009, 3004,3), (1009, 3001,2), (1010, 3008,7), (1010, 3003,9);
+
+
+--4.ACCESSORY DETAILS
+INSERT INTO LucidMotors.dbo.AccessoryDetails (AccessoryID, AccessoryName, Cost, Availability)
+VALUES
+(2001, 'All-Weather Floor Mats', 150, 'In Stock'),
+(2002, 'Cargo Area Protector', 200, 'No Stock'),
+(2003, 'Car Cover', 500, 'In Stock'),
+(2004, 'Bicycle Rack', 350, 'No Stock'),
+(2005, 'Roof Box', 700, 'In Stock'),
+(2006, 'Rear Seat Entertainment', 1200, 'In Stock'),
+(2007, 'Premium Audio System', 2500, 'In Stock'),
+(2008, 'Carbon Fiber Spoiler', 4000, 'No Stock'),
+(2009, 'Seat covers', 600, 'In Stock'),
+(2010, 'Custom Paint Job', 8000, 'Customize'),
+(2011, 'Performance Brake Kit', 6000, 'In Stock'),
+(2012, 'Seat covers', 600, 'In Stock'),
+(2013, 'Subwoofers', 9000, 'Customize'),
+(2014, 'Headrest monitors',5000, 'In Stock'),
+(2015, 'Alarm systems',1900, 'No Stock');
+
+
+--5.EMPLOYEE DETAILS
+INSERT INTO LucidMotors.dbo.EmployeeDetails (EmployeeID, ShowroomID, EmployeeLName, EmployeeFName, JobTitle, Email, Contact)
+VALUES
+(101, 3001, 'Smith', 'John', 'Sales Manager', 'jsmith@email.com', '555-1234'),
+(201, 3001, 'Johnson', 'Lisa', 'Sales Associate', 'ljohnson@email.com', '555-2345'),
+(203, 3001, 'Williams', 'David', 'Service Manager', 'dwilliams@email.com', '555-3456'),
+(204, 3001, 'Brown', 'Jessica', 'Service Technician', 'jbrown@email.com', '555-4567'),
+(102, 3002, 'Garcia', 'James', 'Sales Manager', 'jgarcia@email.com', '555-5678'),
+(206, 3002, 'Miller', 'Emily', 'Sales Associate', 'emiller@email.com', '555-6789'),
+(207, 3002, 'Davis', 'Michael', 'Service Manager', 'mdavis@email.com', '555-7890'),
+(208, 3002, 'Garcia', 'Elizabeth', 'Service Technician', 'egarcia@email.com', '555-8901'),
+(103, 3003, 'Taylor', 'Matthew', 'Sales Manager', 'mtaylor@email.com', '555-9012'),
+(209, 3003, 'Anderson', 'Jennifer', 'Sales Associate', 'janderson@email.com', '555-0123'),
+(210, 3003, 'Wilson', 'Thomas', 'Service Manager', 'twilson@email.com', '555-1234'),
+(211, 3003, 'Smith', 'Mary', 'Service Technician', 'msmith@email.com', '555-7890'),
+(212, 3003, 'Smith', 'John', 'Sales Consultant', 'john.smith@lucidmotors.com', '555-1234'),
+(213, 3003, 'Williams', 'Emily', 'Sales Represntative', 'emily.williams@lucidmotors.com', '555-5678'),
+(104, 3004, 'Jones', 'David', 'Sales Manager', 'david.jones@lucidmotors.com', '555-2468'),
+(214, 3004, 'Brown', 'Jessica', 'Service Technician', 'jessica.brown@lucidmotors.com', '555-7890'),
+(105, 3005, 'Garcia', 'Juan', 'Sales Manager', 'juan.garcia@lucidmotors.com', '555-1357'),
+(215, 3005, 'Lee', 'Jennifer', 'Service Advisor', 'jennifer.lee@lucidmotors.com', '555-2468'),
+(216, 3005, 'Martinez', 'Carlos', 'Sales Representative', 'carlos.martinez@lucidmotors.com', '555-3691'),
+(217, 3005, 'Gonzalez', 'Maria', 'Finance Manager', 'maria.gonzalez@lucidmotors.com', '555-3579'),
+(106, 3006, 'Anderson', 'Steven', 'Sales Manager', 'steven.anderson@lucidmotors.com', '555-4680'),
+(218, 3006, 'Wong', 'Angela', 'Sales Representative', 'angela.wong@lucidmotors.com', '555-5678'),
+(219, 3006, 'Nguyen', 'Linh', 'Finance Manager', 'linh.nguyen@lucidmotors.com', '555-8901'),
+(107, 3007, 'Garcia', 'Carlos', 'Sales Manager', 'carlos.garcia@lucidmotors.com', '555-4321'),
+(220, 3007, 'Martinez', 'Sofia', 'Sales Representative', 'sofia.martinez@lucidmotors.com', '555-8765'),
+(221, 3007, 'Lee', 'Hyun', 'Service Technician', 'hyun.lee@lucidmotors.com', '555-2345'),
+(108, 3008, 'Wang', 'Yi', 'Sales Manager', 'yi.wang@lucidmotors.com', '555-6789'),
+(222, 3008, 'Singh', 'Amar', 'Service Manager', 'amar.singh@lucidmotors.com', '555-0123'),
+(223, 3008, 'Patel', 'Raj', 'Finance Manager', 'raj.patel@lucidmotors.com', '555-5432'),
+(224, 3008, 'Chen', 'Wei', 'Sales Representative', 'wei.chen@lucidmotors.com', '555-9876'),
+(109, 3009, 'Ward', 'Jonathan', 'Sales Manager', 'j.ward@example.com', '555-6789'),
+(225, 3009, 'Baker', 'Sophie', 'Sales Representative', 's.baker@example.com', '555-2345'),
+(226, 3009, 'Lopez', 'Carlos', 'Finance Manager', 'c.lopez@example.com', '555-1234'),
+(227, 3009, 'Adams', 'Emily', 'Parts Specialist', 'e.adams@example.com', '555-4567'),
+(228, 3009, 'Garcia', 'Isabella', 'Service Technician', 'i.garcia@example.com', '555-8910'),
+(110, 3010, 'Wang', 'Michael', 'Sales Manager', 'm.wang@example.com', '555-3456'),
+(230, 3010, 'Miller', 'Ava', 'Service Advisor', 'a.miller@example.com', '555-2345'),
+(231, 3010, 'Johnson', 'Ethan', 'Sales Executive', 'e.johnson@example.com', '555-1234'),
+(232, 3010, 'Lee', 'Mia', 'Sales Associate', 'm.lee@example.com', '555-4567'),
+(233, 3004, 'Sam', 'John', 'Sales Representative', 'jsam@email.com', '505-2114');
+
+
+--6.SHOWROOM DETAILS
+INSERT INTO LucidMotors.dbo.ShowroomDetails (ShowroomID, ManagerID, StreetAddress, City, Zipcode, ShowroomRating)
+VALUES
+(3001, 101, '123 Main St', 'New York', '10001', 4),
+(3002, 102, '456 Park Ave', 'Los Angeles', '90001',3),
+(3003, 103, '789 Broadway', 'Chicago', '60007', 5),
+(3004, 104, '1010 Market St', 'San Francisco', '94103', 4),
+(3005, 105, '1212 5th Ave', 'Seattle', '98101', 2),
+(3006, 106, '1414 Walnut St', 'Philadelphia', '19103', 3),
+(3007, 107, '1616 Main St', 'Houston', '77002', 5),
+(3008, 108, '1818 North St', 'Boston', '02108', 4),
+(3009, 109, '2020 Pennsylvania Ave', 'Washington DC', '20006', 3),
+(3010, 110, '2222 Michigan Ave', 'Detroit', '48201', 2);
+
+
+
+
+
+--7. CUSTOMER DETAILS
+INSERT INTO LucidMotors.dbo.CustomerDetails (CustomerID, VIN, CustomerFName, CustomerLName, StreetAddress, City, State, ZipCode, CustomerContact, Occupation) VALUES (10001, 'WAULFAFR5EA011234', 'John', 'Doe', '123 Main St', 'Los Angeles', 'CA', '90001', '555-123-4567', 'Engineer'),
+(10002, 'WAULFAFR5EA022345', 'Jane', 'Smith', '456 Maple Ave', 'New York', 'NY', '10001', '555-234-5678', 'Teacher'),
+(10003, 'WAULFAFR5EA033456', 'Robert', 'Johnson', '789 Oak St', 'Chicago', 'IL', '60601', '555-345-6789', 'Lawyer'),
+(10004, 'WAULFAFR5EA044567', 'Emily', 'Williams', '321 Elm St', 'Houston', 'TX', '77002', '555-456-7890', 'Doctor'),
+(10005, 'WAULFAFR5EA055678', 'David', 'Brown', '654 Pine St', 'Phoenix', 'AZ', '85001', '555-567-8901', 'Software Developer'),
+(10006, 'WAULFAFR5EA066789', 'Michelle', 'Davis', '987 Cedar Ave', 'San Diego', 'CA', '92101', '555-678-9012', 'Marketing Specialist'),
+(10007, 'WAULFAFR5EA077890', 'William', 'Garcia', '741 Maple St', 'Miami', 'FL', '33101', '555-789-0123', 'Accountant'),
+(10008, 'WAULFAFR5EA088901', 'Mary', 'Martinez', '852 Oak Ave', 'Atlanta', 'GA', '30301', '555-890-1234', 'Business Analyst'),
+(10009, '1G1ZT52F24F234567', 'John', 'Doe', '123 Main St', 'Los Angeles', 'CA', '90001', '555-1234', 'Engineer'),
+(10010, '1FT7W2B67FEC12345', 'Jane', 'Doe', '456 Elm St', 'New York', 'NY', '10001', '555-5678', 'Teacher'),
+(10011, '3GCPKSE37CG23456', 'Bob', 'Smith', '789 Oak St', 'Chicago', 'IL', '60601', '555-9012', 'Accountant'),
+(10012, '1GKS2AE06CR234569', 'Sara', 'Lee', '1011 Maple St', 'Seattle', 'WA', '98101', '555-3456', 'Lawyer'),
+(10013, 'JTDKN3DU4A0065467', 'Mike', 'Johnson', '1313 Mockingbird Ln', 'Dallas', 'TX', '75201', '555-7890', 'Business Owner'),
+(10014, '1J4FY29S4VP123456', 'Emily', 'Nguyen', '1515 6th Ave', 'San Francisco', 'CA', '94101', '555-2345', 'Doctor'),
+(10015, '3VWPL7AJ2CM123456', 'David', 'Kim', '1717 Broadway', 'New York', 'NY', '10001', '555-6789', 'Investor'),
+(10016, '5UXKR0C50F0K12345', 'Karen', 'Wong', '1919 Van Ness Ave', 'San Francisco', 'CA', '94101', '555-0123', 'Graphic Designer'),
+(10017, '1GKS2AE05CR234567', 'Tom', 'Chen', '2121 Market St', 'Philadelphia', 'PA', '19101', '555-3456', 'Sales Manager'),
+(10018, 'JSD8320KLP912FGB', 'John', 'Doe', '123 Main St', 'Seattle', 'WA', '98101', '555-1234', 'Engineer'),
+(10019, 'GTE5879AJN232FMC', 'Jane', 'Smith', '456 1st Ave', 'San Francisco', 'CA', '94107', '555-5678', 'Teacher'),
+(10020, 'HJK2190ZCD738HDT', 'David', 'Lee', '789 2nd St', 'Los Angeles', 'CA', '90012', '555-9012', 'Accountant'),
+(10021, 'LMN6724OPQ369ABC', 'Emily', 'Nguyen', '321 Elm St', 'New York', 'NY', '10001', '555-3456', 'Writer'),
+(10022, 'DEF8452GHI956JLQ', 'Andrew', 'Kim', '555 3rd Ave', 'Seattle', 'WA', '98109', '555-6789', 'Designer'),
+(10023, 'KNO7641YXZ852BFD', 'Samantha', 'Johnson', '987 Oak St', 'San Francisco', 'CA', '94109', '555-2345', 'Doctor'),
+(10024, 'PQR5238STU193GHL', 'Michael', 'Wang', '246 Pine St', 'Los Angeles', 'CA', '90013', '555-5678', 'Lawyer'),
+(10025, 'VWX3571YZA654MNO', 'Elizabeth', 'Brown', '369 Maple Ave', 'New York', 'NY', '10002', '555-8901', 'Manager'),
+(10026, 'WAUHGAFC3FN000001', 'John', 'Doe', '123 Main St', 'Los Angeles', 'California', '90031', '123-456-7890', 'Artist'),
+(10027, 'WAUHGAFC3FN000002', 'Jane', 'Grey', '456 Elm St', 'San Francisco', 'California', '94101', '234-567-8901', 'Lawyer'),
+(10028, 'WAUHGAFC3FN000003', 'Bob', 'Smith', '789 Oak St', 'San Diego', 'California', '92101', '345-678-9012', 'Doctor'),
+(10029, 'WAUHGAFC3FN000004', 'Samantha', 'Johnson', '987 Maple St', 'Seattle', 'Washington', '98101', '456-789-0123', 'Entrepreneur');
+
+
+--8.LOAN PROVIDER DETAILS
+INSERT INTO LucidMotors.dbo.LoanProviderDetails(LoanProviderID, CustomerID, LoanProviderName, InterestRate, LoanDuration, AmountRequested, LoanEligibility, LoanApprovalDate)
+VALUES(501, 10009, 'ABC Bank', 5.5, 36, 25000,35000,'20230430'),
+(502, 10018, 'XYZ Bank', 6.5, 48, 35000, 45000, '20230430'),
+(503, 10005, 'PQR Bank', 4.5, 24, 20000, 30000, '20230513'),
+(504, 10011, 'LMN Bank', 5.0, 36, 30000, 40000, '20230605'),
+(505, 10024, 'EFG Bank', 7.5, 60, 50000, 60000, '20230628'),
+(506, 10010, 'RST Bank', 4.0, 12, 10000, 20000, '20230529'),
+(507, 10006, 'UVW Bank', 6.0, 24, 15000, 25000, '20230812'),
+(508, 10001, 'GHI Bank', 5.25, 36, 28000, 38000,'20230502'),
+(509, 10020, 'ABC Bank', 4.5, 60, 50000, 45000, '20230612'),
+(510,10022, 'XYZ Bank', 3.75, 36, 25000, 20000, '20230711');
+
+
+--9.PROMOTIONS
+INSERT INTO LucidMotors.dbo.Promotions (OfferID, OfferType, Discount, OfferStartDate, OfferEndDate) VALUES (1, 'Holiday Sale', 10, '2023-12-01', '2023-12-31'),
+(2, 'End of Summer Sale', 15, '2023-08-01', '2023-08-31'),
+(3, 'Black Friday Sale', 20, '2023-11-24', '2023-11-27'),
+(4, 'Clearance Sale', 30, '2023-06-01', '2023-06-30'),
+(5, 'New Year Sale', 50, '2024-01-01', '2024-01-31'),
+(6, 'Back to School Sale', 10, '2023-09-01', '2023-09-30'),
+(7, 'Summer Clearance Sale', 25, '2023-07-01', '2023-07-31'),
+(8, 'Memorial Day Sale', 15, '2023-05-27', '2023-05-29'),
+(9, 'Spring Sale', 10, '2023-03-01', '2023-03-31'),
+(10, 'Independence Day', 5, '2022-07-01', '2022-07-10');
+
+
+
+
+
+
+
+--10.DEALER DETAILS
+INSERT INTO LucidMotors.dbo.DealerDetails (DealerID, ShowroomID, DealerName, Contact)
+VALUES
+(20001, 3001, 'John Smith', '555-1234'),
+(20002, 3001, 'Emily Jones', '555-5678'),
+(20003, 3002, 'David Lee', '555-2468'),
+(20004, 3002, 'Jennifer Kim', '555-3698'),
+(20005, 3003, 'Daniel Lee', '555-9876'),
+(20006, 3003, 'Sophia Kim', '555-4321'),
+(20007, 3004, 'Michael Chen', '555-1111'),
+(20008, 3004, 'Isabella Liu', '555-2222'),
+(20009, 3005, 'Matthew Davis', '555-3333'),
+(20010, 3005, 'Ava Wilson', '555-4444'),
+(20011, 3006, 'William Brown', '555-5555'),
+(20012, 3006, 'Mia Wilson', '555-6666'),
+(20013, 3007, 'James Garcia', '555-7777'),
+(20014, 3007, 'Victoria Rodriguez', '555-8888'),
+(20015, 3008, 'Oliver Johnson', '555-9999'),
+(20016, 3008, 'Lucid Motors of San Diego', '619-555-0101'),
+(20017, 3009, 'Lucid Motors of Seattle', '206-555-0102'),
+(20018, 3009, 'Lucid Motors of Dallas', '214-555-0103'),
+(20019, 3010, 'Lucid Motors of Houston', '713-555-0104'),
+(20020, 3004, 'Lucid Motors of Miami', '305-555-0105'),
+(20021, 3007, 'Lucid Motors of New York', '212-555-0106'),
+(20022, 3001, 'Lucid Motors of Chicago', '312-555-0107'),
+(20023, 3003, 'Lucid Motors of Toronto', '416-555-0108'),
+(20024, 3006, 'Lucid Motors of Vancouver', '604-555-0109'),
+(20025, 3002, 'Lucid Motors of London', '+44-20-555-0110');
+
+
+--11. TEST DRIVE DETAILS
+INSERT INTO LucidMotors.dbo.TestDriveDetails (CustLicenseNum, ScheduleDate, ShowroomID, EmployeeID, TestDriveOutcome, Feedback) VALUES (123456789, '2023-05-15 10:00:00', 3001, 201, 'Successful', 'Great experience!'),
+(987654321, '2023-05-15 11:00:00', 3006, 218, 'Successful', 'Loved the car!'),
+(2468101214, '2023-05-16 12:00:00', 3010, 232, 'Successful', 'Amazing performance!'),
+(1357911131, '2023-05-16 13:00:00', 3009, 225, 'Successful', 'Luxurious interior!'),
+(3691215182, '2023-05-17 14:00:00', 3008, 224, 'Successful', 'Impressive features!'),
+(1526374859, '2023-05-17 15:00:00', 3003, 213, 'Successful', 'Smooth ride!'),
+(9876543210, '2023-05-18 16:00:00', 3004, 233, 'Successful', 'Incredible handling!'),
+(1011121314, '2023-05-18 17:00:00', 3007, 220, 'Successful', 'Beautiful design!'),
+(1413121110, '2023-05-19 18:00:00', 3001, 201, 'Successful', 'Top-notch quality!'),
+(1098765432, '2023-05-19 19:00:00', 3005, 216, 'Successful', 'Amazing sound system!'),
+(1212121234, '2023-05-20 12:00:00', 3002, 206, 'Successful', 'Amazing sound system!'),
+(1011122233, '2023-05-20 11:00:00', 3005, 216, 'Successful', 'Not Up to Mark!'),
+(5345626617, '2023-05-21 08:00:00', 3004, 233, 'Successful', 'Amazing system!'),
+(1015298733, '2023-05-21 10:00:00', 3008, 224, 'Successful', 'Steering is Hard'),
+OPEN SYMMETRIC KEY LucidLicenseKey
+DECRYPTION BY CERTIFICATE LucidMotorsCertificate;
+INSERT INTO LucidMotors.dbo.TestDriveDetails (EncryptedLicense, ScheduleDate, ShowroomID, EmployeeID, TestDriveOutcome, Feedback) VALUES (EncryptByKey(Key_GUID('LucidLicenseKey'),'3791915287'), '2023-05-22 10:30:00', 3001, 201, 'Successful', 'Bad experience!');
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'7249186375'), '2023-05-22 11:00:00', 3005, 216, 'Successful', 'Spacious interior'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'1694238750'), '2023-05-22 11:30:00', 3002, 206, 'Successful', 'Eye-catching style'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'4502937185'), '2023-05-22 12:00:00', 3003, 213, 'Successful', 'Great value'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'6128374905'), '2023-05-22 12:30:00', 3008, 224, 'Successful', 'Precise steering'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'7409538216'), '2023-05-22 01:00:00', 3009, 225, 'Successful', 'Accelerates quickly'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'8931672045'), '2023-05-22 01:30:00', 3010, 232, 'Successful', 'Not Great'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'3571482960'), '2023-05-22 02:00:00', 3007, 220, 'Successful', 'Poor Design'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'9846023715'), '2023-05-22 02:30:00', 3006, 218, 'Successful', 'Quiet cabin'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'7261480359'), '2023-05-22 03:00:00', 3004, 233, 'Successful', 'Comfortable seats'),
+(EncryptByKey(Key_GUID('LucidLicenseKey'),'1857293604'), '2023-05-22 04:00:00', 3004, 233, 'Successful', 'Comfortable Driving');
+
+
+--12. VEHICLE TEST MAPPING
+INSERT INTO LucidMotors.dbo.VehicleTestMapping (ModelID, TestDriveID)
+VALUES (1001, 5011),
+(1004, 5012),
+(1003, 5003),
+(1004, 5004),
+(1005, 5010),
+(1001, 5008),
+(1002, 5009),
+(1006, 5007),
+(1001, 5005),
+(1001, 5006),
+(1007, 5011),
+(1008, 5012),
+(1009, 5013),
+(1010, 5014);
+
+
+--13. VEHICLE PROMOTION MAPPING
+INSERT INTO LucidMotors.dbo.VehiclePromotionMap (ModelID, OfferID)
+VALUES (1001, 1), (1001, 3), (1001, 9), (1002, 2),(1002, 4),(1003, 5), (1003, 3),
+(1003, 7),(1003, 6),(1004, 10),(1004, 8),(1005, 7),(1005, 10),(1005, 4),
+(1006, 1),(1006, 3),(1006, 8),
+(1007, 2),(1008, 6),(1009, 1),(1010, 3);
+
+
+--14. CUSTOMER VEHICLE MAPPING
+INSERT INTO LucidMotors.dbo.CustomerVehicleMapping (ModelID, CustomerID)
+VALUES (1001, 10001),(1002, 10003),(1002, 10009),(1003, 10005),(1004, 10011),(1005, 10013),(1006, 10012),(1001, 10025),
+(1003, 10022),(1004, 10017),(1005, 10002),(1006, 10020),(1001, 10021),(1002, 10024),(1003, 10014),
+(1004, 10015),(1005, 10004),(1006, 10007),(1001, 10006),(1002, 10010),(1003, 10008),(1004, 10016),(1005, 10018),
+(1006, 10019),(1002, 10023),
+(1007,10029),(1008,10026),(1009,10028),(1010,10027);
+
+
+--15. SALES PURCHASE DETAILS
+INSERT INTO LucidMotors.dbo.SalesPurchaseDetails (OrderID, ModelID, CustomerID, ShowroomID, OfferID, OrderDate, DeliveryDate)
+VALUES (701, 1001, 10001, 3001, 3, '2023-11-23', '2023-11-27');
+(702, 1002, 10009, 3001, 1, '2023-11-30', '2023-12-25'),
+(703, 1003, 10022, 3005, 2, '2023-08-05', '2023-08-31'),
+(704, 1004, 10016, 3009, 4, '2023-06-10', '2023-06-20'),
+(705, 1005, 10013, 3008, 6, '2023-09-01', '2023-09-05'),
+(706, 1006, 10020, 3002, 8, '2023-05-12', '2023-05-28'),
+(707, 1002, 10005, 3007, '2022-07-10', '2022-07-15')
+(708, 1003, 10014, 3002, '2022-10-10', '2022-10-18'),
+(709, 1004, 10017, 3003, '2022-01-11', '2022-01-20'),
+(710, 1001, 10005, 3006, '2022-02-28', '2022-03-06'),
+(711, 1001, 10021, 3001, 3, '2023-11-22', '2023-11-26'),
+(714, 1007, 10029, 3005, 2, '2023-08-22', '2023-08-30'),
+(715, 1004, 10006, 3008, 8, '2023-05-26', '2023-05-29'),
+(716, 1006, 10024, 3002, 1, '2023-12-21', '2023-12-29'),
+(717, 1002, 10030, 3004, 2, '2023-08-12', '2023-08-18'),
+(718, 1010, 10028, 3007, '2023-11-11', '2023-11-20'),
+(719, 1008, 10004, 3001, 6, '2023-09-07', '2023-09-15'),
+(720, 1001, 10012, 3004, 1, '2023-12-01', '2023-12-10'),
+(721, 1009, 10026, 3003, 1, '2023-12-06', '2023-11-16'),
+(722, 1003, 10019, 3007, 5, '2023-01-22', '2023-01-27'),
+(723, 1006, 10027, 3010, 3, '2023-11-21', '2023-11-26'),
+(724, 1005, 10008, 3001, 4, '2023-06-02', '2023-06-08'),
+(725, 1009, 10025, 3002, 1, '2023-12-07', '2023-12-10'),
+(727, 1002, 10015, 3010, 4, '2023-06-09', '2023-06-17'),
+(728, 1007, 10018, 3005, 2, '2023-08-10', '2023-08-13'),
+(729, 1003, 10003, 3005, 7, '2023-07-22', '2023-07-31');
+
+
+--16. ORDER ACCESSORY MAPPING
+INSERT INTO LucidMotors.dbo.OrderAccMap (OrderID, AccessoryID)
+VALUES (701, 2001),(702, 2004),(703, 2008),(704, 2011),(705, 2014),(706, 2003);
+(707, 2002),(708, 2005),(709, 2008),(710, 2006),
+(701, 2005),(701, 2011),(701, 2003),(703, 2005),(703, 2014),(703, 2006),
+(703, 2011),(706, 2004),(706, 2011),(706, 2009),(706, 2010),(707, 2001),
+(707, 2015),(709, 2011),(709, 2001),(709, 2012),(710, 2004),(710, 2002),(710,2009);
+
+
+--17. CUSTOMER FEEDBACK
+INSERT INTO LucidMotors.dbo.CustomerFeedback (FeedbackID, CustomerID, ModelID, Rating, Feedback)
+VALUES (50001, 10025, 1001, 9, 'The car is amazing!');
+(50002, 10003, 1002, 5, 'This car is a game-changer!');
+(50003, 10005, 1003, 7, 'I love the sleek design of this car.');
+(50004, 10011, 1004, 8, 'It drives smoothly but could use more features.');
+(50005, 10004, 1005, 5, 'I am blown away by this car!');
+(50006, 10012, 1006, 2, 'I am not satisfied with my purchase.');
+(50007, 10021, 1001, 4, 'This car is worth every penny.');
+(50008, 10009, 1002, 5, 'This is the best car I have ever driven!');
+(50010, 10002, 1005, 4, 'I am very happy with my purchase.');
+(50011, 10015, 1004, 8, 'I love the design of this car!');
+
+
+----LIST OF TABLES----
+
+Select * From AccessoryDetails;
+Select * From CustomerDetails;
+Select * From CustomerFeedback;
+Select * From CustomerVehicleMapping;
+Select * From DealerDetails;
+Select * From EmployeeDetails;
+Select * From InventoryDetails;
+Select * From LoanProviderDetails;
+Select * From ModelPerformance;
+Select * From OrderAccMap;
+Select * From Promotions;
+Select * From SalesPurchaseDetails;
+Select * From ShowroomDetails;
+Select * From TestDriveDetails;
+Select * From VehicleModel;
+Select * From VehiclePromotionMap;
+Select * From VehicleTestMapping;
+
